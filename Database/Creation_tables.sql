@@ -1,0 +1,191 @@
+-- Active: 1759846657648@@127.0.0.1@33066@edt_app
+CREATE TABLE labels(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    original_name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE slot_types(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    acronym VARCHAR(10) NOT NULL,
+    slot_order INT NOT NULL,
+    color VARCHAR(7) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE roles(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    level INT NOT NULL UNIQUE,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+CREATE TABLE users(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    acronym VARCHAR(3) NOT NULL,
+    role_id INT NOT NULL,
+    FOREIGN KEY (role_id) REFERENCES roles(id),
+    remember_token VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE teachers(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    type ENUM('permanent', 'vacataire') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE years(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE rooms(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    seat_capacity INT NOT NULL,
+    computer_capacity INT NOT NULL,
+    exam_capacity INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE promotions(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    year_id INT NOT NULL,
+    student_amount INT,
+    FOREIGN KEY (year_id) REFERENCES years(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE semesters(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    semester_number INT NOT NULL,
+    year_id INT NOT NULL,
+    FOREIGN KEY (year_id) REFERENCES years(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE teachers_years(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    teacher_id INT NOT NULL,
+    year_id INT NOT NULL,
+    FOREIGN KEY (teacher_id) REFERENCES teachers(id),
+    FOREIGN KEY (year_id) REFERENCES years(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE weeks(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    week_number INT NOT NULL,
+    year_id INT NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    FOREIGN KEY (year_id) REFERENCES years(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE `groups`(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    promotion_id INT NOT NULL,
+    student_amount INT,
+    FOREIGN KEY (promotion_id) REFERENCES promotions(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE teachings(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title TEXT NOT NULL,
+    apogee_code VARCHAR(10) NOT NULL,
+    tp_hours_initial decimal(5,2) NOT NULL,
+    tp_hours_continued DECIMAL(5,2),
+    td_hours_initial DECIMAL(5,2) NOT NULL,
+    td_hours_continued DECIMAL(5,2),
+    cm_hours DECIMAL(5,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE subgroups(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    student_amount INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE teachers_teachings(
+    teacher_id INT NOT NULL,
+    teaching_id INT NOT NULL,
+    FOREIGN KEY (teacher_id) REFERENCES teachers(id),
+    FOREIGN KEY (teaching_id) REFERENCES teachings(id),
+    PRIMARY KEY (teacher_id, teaching_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE teachings_rooms(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    teaching_id INT NOT NULL,
+    room_id INT NOT NULL,
+    type_id INT NOT NULL,
+    FOREIGN KEY (type_id) REFERENCES slot_types(id),
+    FOREIGN KEY (teaching_id) REFERENCES teachings(id),
+    FOREIGN KEY (room_id) REFERENCES rooms(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE slots(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    duration DECIMAL(3,1) NOT NULL,
+    teaching_id INT NOT NULL,
+    FOREIGN KEY (teaching_id) REFERENCES teachings(id),
+    promotion_id INT NOT NULL,
+    FOREIGN KEY (promotion_id) REFERENCES promotions(id),
+    group_id INT,
+    FOREIGN KEY (group_id) REFERENCES `groups`(id),
+    subgroup_id INT,
+    FOREIGN KEY (subgroup_id) REFERENCES subgroups(id),
+    room_amount INT(11) NOT NULL,
+    is_neutralized BOOLEAN NOT NULL,
+    is_exam BOOLEAN DEFAULT 0,
+    week_id INT NOT NULL,
+    FOREIGN KEY (week_id) REFERENCES weeks(id),
+    type_id INT NOT NULL,
+    FOREIGN KEY (type_id) REFERENCES slot_types(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE slots_teachers(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    slot_id INT NOT NULL,
+    teacher_id INT NOT NULL,
+    FOREIGN KEY (slot_id) REFERENCES slots(id),
+    FOREIGN KEY (teacher_id) REFERENCES teachers(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
