@@ -26,7 +26,6 @@ import sys
 from ortools.sat.python import cp_model
 
 import diagnose
-from data_provider import DataProvider
 from data_provider_id import DataProviderID
 from solution_visualizer import SolutionVisualizer
 from time_table_model import TimetableModel
@@ -130,7 +129,6 @@ if __name__ == "__main__":
         'user': 'root', 'password': 'secret', 'port': 3306
     }
 
-    data_provider = DataProvider(DB_CONFIG)
     #model_data = data_provider.load_and_prepare_data()
 
     DataProviderInsert = DataProviderID(DB_CONFIG)
