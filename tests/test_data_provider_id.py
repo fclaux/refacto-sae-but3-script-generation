@@ -12,20 +12,20 @@ def db_config():
         'user': 'test_user',
         'password': 'test_pass',
         'host': 'localhost',
-        'port': '3306',
+        'port': 3306,
         'database': 'test_db'
     }
 
 
 @pytest.fixture
 def data_provider(db_config):
-    with patch('data_provider_id.create_engine'):
+    with patch('db_utils.create_engine'):
         return DataProviderID(db_config)
 
 
 class TestDataProviderIDInit:
     def test_init_creates_engine_with_correct_url(self, db_config):
-        with patch('data_provider_id.create_engine') as mock_engine:
+        with patch('db_utils.create_engine') as mock_engine:
             DataProviderID(db_config)
             expected_url = "mysql+mysqlconnector://test_user:test_pass@localhost:3306/test_db"
             mock_engine.assert_called_once_with(expected_url)

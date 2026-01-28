@@ -1,8 +1,9 @@
-from sqlalchemy import create_engine
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
+
+from db_utils import create_db_engine, get_db_config
 
 #TODO Faire une refacto des fonctions afin qu'il y ait moins de duplication et que ce soit plus compréhensible et renommage.
 def get_end_time(row) -> str:
@@ -239,12 +240,9 @@ def recuperation_indisponibilites_slot(df_dispos, indisponibilites_groupes: dict
 
 
 class FunctionTest:
-    def __init__(self, db_config: Dict[str, Any]):
-        self.db_config = db_config
-        self.engine = create_engine(
-            f"mysql+mysqlconnector://{db_config['user']}:{db_config['password']}@"
-            f"{db_config['host']}:{db_config['port']}/{db_config['database']}"
-        )
+    def __init__(self, db_config: Optional[Dict[str, Any]] = None):
+        self.db_config = db_config if db_config else get_db_config()
+        self.engine: Engine = create_db_engine(self.db_config)
     def load_and_prepare_data(self):
         week_id=221
         query_dispos = """
@@ -330,11 +328,7 @@ class FunctionTest:
 
 
 if __name__ == "__main__":
-    DB_CONFIG = {
-        'host': '127.0.0.1', 'database': 'provisional_calendar',
-        'user': 'root', 'password': 'secret', 'port': 3306
-    }
-    data_provider = FunctionTest(DB_CONFIG)
+    data_provider = FunctionTest()  # Utilise la config depuis .env
     data_provider.load_and_prepare_data()
     print(recup_cours("CM_R1.01 Initiation au développement_BUT1_s7000000"))
     print(recup_id_slot_from_str_to_int("développement_BUT1_s7000000"))

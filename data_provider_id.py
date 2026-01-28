@@ -1,8 +1,9 @@
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 
+from db_utils import create_db_engine, get_db_config
 from function import get_availabilityProf_From_Unavailable, get_availabilityRoom_From_Unavailable, \
     get_availabilityGroup_From_Unavailable, convert_days_int_to_string, get_availabilitySlot_From_Unavailable
 
@@ -16,12 +17,9 @@ class DataProviderID:
     données nécessaires pour le modèle d'optimisation.
     """
 
-    def __init__(self, db_config: Dict[str, Any]):
-        self.db_config = db_config
-        self.engine = create_engine(
-            f"mysql+mysqlconnector://{db_config['user']}:{db_config['password']}@"
-            f"{db_config['host']}:{db_config['port']}/{db_config['database']}"
-        )
+    def __init__(self, db_config: Optional[Dict[str, Any]] = None):
+        self.db_config = db_config if db_config else get_db_config()
+        self.engine: Engine = create_db_engine(self.db_config)
 
     def load_and_prepare_data(self,week_id:int) -> Dict[str, Any]:
         """

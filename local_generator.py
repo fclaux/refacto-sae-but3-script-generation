@@ -1,20 +1,14 @@
 import pandas as pd
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from datetime import datetime, timedelta  # ← ajoute timedelta ici aussi
 
 from Front.schedule_generator import generate_schedule
+from db_utils import get_engine
 
 # ==================== CONFIGURATION ====================
-DB_CONFIG = {
-    'host': '127.0.0.1', 'database': 'provisional_calendar',
-    'user': 'root', 'password': 'secret', 'port': 3306
-}
-engine = create_engine(
-            f"mysql+mysqlconnector://{DB_CONFIG['user']}:{DB_CONFIG['password']}@"
-            f"{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
-        )
+engine = get_engine()
 
 # Jours de la semaine pour affichage lisible
 JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]

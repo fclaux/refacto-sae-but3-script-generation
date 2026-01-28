@@ -115,23 +115,15 @@ def diagnostic_automatique(model_class, data, timeout_per_test=60):
 # ==============================================================================
 if __name__ == "__main__":
     start_time = time.perf_counter()
-    #DB_CONFIG = {
-    #    'host': '127.0.0.1', 'database': 'edt_app',
-    #    'user': 'edt_user', 'password': 'userpassword', 'port': 33066
-    #}
+    
     parser = argparse.ArgumentParser(description="Exemple d'entrée en ligne de commande")
     parser.add_argument("--id_semaine", type=int, required=True, help="Un entier en entrée correspondant à la semaine à générer")
     argvs = parser.parse_args()
 
     print("Vous avez fourni :", argvs.id_semaine)
-    DB_CONFIG = {
-        'host': '127.0.0.1', 'database': 'provisional_calendar',
-        'user': 'root', 'password': 'secret', 'port': 3306
-    }
 
-    #model_data = data_provider.load_and_prepare_data()
-
-    DataProviderInsert = DataProviderID(DB_CONFIG)
+    # Utilise la configuration depuis .env via db_utils
+    DataProviderInsert = DataProviderID()
     model_data = DataProviderInsert.load_and_prepare_data(argvs.id_semaine)
     scheduler = TimetableModel(model_data)
     scheduler.build_model()
