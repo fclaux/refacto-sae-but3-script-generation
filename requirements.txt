@@ -1,0 +1,7 @@
+ortools
+pandas
+sqlalchemy
+mysql-connector-python
+matplotlib
+pytest
+pytest-cov
