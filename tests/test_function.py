@@ -1,170 +1,122 @@
+"""
+Tests pour le module function.
+Refactorisé pour éliminer la duplication de code.
+"""
 import unittest
 import pandas as pd
 from function import (
-    get_end_time,
-    get_start_time,
-    convert_daystring_to_int,
-    convert_days_int_to_string,
-    _time_to_slot,
-    recup_cours,
-    recup_id_slot_from_str_to_int,
-    recuperation_indisponibilites,
-    recuperation_disponibilites_profs,
-    get_availabilityProf_From_Unavailable,
-    recuperation_indisponibilites_rooms,
-    recuperation_indisponibilites_group,
-    recuperation_indisponibilites_slot,
+    get_end_time, get_start_time, convert_daystring_to_int, convert_days_int_to_string,
+    _time_to_slot, recup_cours, recup_id_slot_from_str_to_int,
+    recuperation_indisponibilites, recuperation_disponibilites_profs,
+    get_availabilityProf_From_Unavailable, recuperation_indisponibilites_rooms,
+    recuperation_indisponibilites_group, recuperation_indisponibilites_slot,
 )
 
 
-class TestGetEndTime(unittest.TestCase):
-    """Tests pour get_end_time."""
-
-    def test_valid_time(self):
-        row = {'end_time': '2026-01-27 14:30:00'}
-        self.assertEqual(get_end_time(row), '14:30:00')
-
-    def test_time_only(self):
-        row = {'end_time': '09:00:00'}
-        self.assertEqual(get_end_time(row), '09:00:00')
-
-    def test_na_value(self):
-        row = {'end_time': pd.NA}
-        self.assertEqual(get_end_time(row), '')
-
-    def test_none_value(self):
-        row = {'end_time': None}
-        self.assertEqual(get_end_time(row), '')
+def make_indispo_df(id_col, id_val, day, start, end):
+    """Factory pour créer un DataFrame d'indisponibilités."""
+    return pd.DataFrame({id_col: [id_val], 'day_of_week': [day], 'start_time': [start], 'end_time': [end]})
 
 
-class TestGetStartTime(unittest.TestCase):
-    """Tests pour get_start_time."""
+class TestGetTime(unittest.TestCase):
+    """Tests pour get_end_time et get_start_time."""
 
-    def test_valid_time(self):
-        row = {'start_time': '2026-01-27 08:00:00'}
-        self.assertEqual(get_start_time(row), '08:00:00')
+    TEST_CASES_END = [
+        ('2026-01-27 14:30:00', '14:30:00'),
+        ('09:00:00', '09:00:00'),
+        (pd.NA, ''),
+        (None, ''),
+    ]
+    TEST_CASES_START = [
+        ('2026-01-27 08:00:00', '08:00:00'),
+        ('13:30:00', '13:30:00'),
+        (pd.NA, ''),
+        (None, ''),
+    ]
 
-    def test_time_only(self):
-        row = {'start_time': '13:30:00'}
-        self.assertEqual(get_start_time(row), '13:30:00')
+    def test_get_end_time(self):
+        for input_val, expected in self.TEST_CASES_END:
+            with self.subTest(input=input_val):
+                self.assertEqual(get_end_time({'end_time': input_val}), expected)
 
-    def test_na_value(self):
-        row = {'start_time': pd.NA}
-        self.assertEqual(get_start_time(row), '')
-
-    def test_none_value(self):
-        row = {'start_time': None}
-        self.assertEqual(get_start_time(row), '')
-
-
-class TestConvertDaystringToInt(unittest.TestCase):
-    """Tests pour convert_daystring_to_int."""
-
-    def test_lundi(self):
-        self.assertEqual(convert_daystring_to_int('Lundi'), 0)
-
-    def test_mardi(self):
-        self.assertEqual(convert_daystring_to_int('Mardi'), 1)
-
-    def test_mercredi(self):
-        self.assertEqual(convert_daystring_to_int('Mercredi'), 2)
-
-    def test_jeudi(self):
-        self.assertEqual(convert_daystring_to_int('Jeudi'), 3)
-
-    def test_vendredi(self):
-        self.assertEqual(convert_daystring_to_int('Vendredi'), 4)
+    def test_get_start_time(self):
+        for input_val, expected in self.TEST_CASES_START:
+            with self.subTest(input=input_val):
+                self.assertEqual(get_start_time({'start_time': input_val}), expected)
 
 
-class TestConvertDaysIntToString(unittest.TestCase):
-    """Tests pour convert_days_int_to_string."""
+class TestDayConversions(unittest.TestCase):
+    """Tests pour convert_daystring_to_int et convert_days_int_to_string."""
 
-    def test_0_is_lundi(self):
-        self.assertEqual(convert_days_int_to_string(0), 'Lundi')
+    DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi']
 
-    def test_1_is_mardi(self):
-        self.assertEqual(convert_days_int_to_string(1), 'Mardi')
+    def test_convert_daystring_to_int(self):
+        for i, day in enumerate(self.DAYS):
+            with self.subTest(day=day):
+                self.assertEqual(convert_daystring_to_int(day), i)
 
-    def test_2_is_mercredi(self):
-        self.assertEqual(convert_days_int_to_string(2), 'Mercredi')
-
-    def test_3_is_jeudi(self):
-        self.assertEqual(convert_days_int_to_string(3), 'Jeudi')
-
-    def test_4_is_vendredi(self):
-        self.assertEqual(convert_days_int_to_string(4), 'Vendredi')
+    def test_convert_days_int_to_string(self):
+        for i, day in enumerate(self.DAYS):
+            with self.subTest(i=i):
+                self.assertEqual(convert_days_int_to_string(i), day)
 
 
 class TestTimeToSlot(unittest.TestCase):
     """Tests pour _time_to_slot."""
 
-    def test_8h00(self):
-        self.assertEqual(_time_to_slot('08:00:00'), 0)
+    TEST_CASES = [
+        ('08:00:00', 0),
+        ('08:30:00', 1),
+        ('09:00:00', 2),
+        ('12:00:00', 8),
+        ('13:30:00', 11),
+        ('18:00:00', 20),
+        (pd.NA, 0),
+    ]
 
-    def test_8h30(self):
-        self.assertEqual(_time_to_slot('08:30:00'), 1)
-
-    def test_9h00(self):
-        self.assertEqual(_time_to_slot('09:00:00'), 2)
-
-    def test_12h00(self):
-        self.assertEqual(_time_to_slot('12:00:00'), 8)
-
-    def test_13h30(self):
-        self.assertEqual(_time_to_slot('13:30:00'), 11)
-
-    def test_18h00(self):
-        self.assertEqual(_time_to_slot('18:00:00'), 20)
-
-    def test_na_value(self):
-        self.assertEqual(_time_to_slot(pd.NA), 0)
+    def test_time_to_slot(self):
+        for time_str, expected in self.TEST_CASES:
+            with self.subTest(time=time_str):
+                self.assertEqual(_time_to_slot(time_str), expected)
 
 
 class TestRecupCours(unittest.TestCase):
     """Tests pour recup_cours."""
 
-    def test_cm_cours(self):
-        result = recup_cours("CM_R1.01 Initiation au développement_BUT1_s7000000")
-        self.assertEqual(result, ('CM', 'R1.01 Initiation au développement'))
+    TEST_CASES = [
+        ("CM_R1.01 Initiation au développement_BUT1_s7000000", ('CM', 'R1.01 Initiation au développement')),
+        ("TD_Mathématiques_BUT2_s123", ('TD', 'Mathématiques')),
+        ("TP_Programmation_G1_s456", ('TP', 'Programmation')),
+    ]
 
-    def test_td_cours(self):
-        result = recup_cours("TD_Mathématiques_BUT2_s123")
-        self.assertEqual(result, ('TD', 'Mathématiques'))
-
-    def test_tp_cours(self):
-        result = recup_cours("TP_Programmation_G1_s456")
-        self.assertEqual(result, ('TP', 'Programmation'))
+    def test_recup_cours(self):
+        for input_str, expected in self.TEST_CASES:
+            with self.subTest(input=input_str):
+                self.assertEqual(recup_cours(input_str), expected)
 
 
 class TestRecupIdSlotFromStrToInt(unittest.TestCase):
     """Tests pour recup_id_slot_from_str_to_int."""
 
-    def test_slot_7000000(self):
-        result = recup_id_slot_from_str_to_int("développement_BUT1_s7000000")
-        self.assertEqual(result, 7000000)
+    TEST_CASES = [
+        ("développement_BUT1_s7000000", 7000000),
+        ("cours_groupe_s123", 123),
+        ("test_s0", 0),
+    ]
 
-    def test_slot_123(self):
-        result = recup_id_slot_from_str_to_int("cours_groupe_s123")
-        self.assertEqual(result, 123)
-
-    def test_slot_0(self):
-        result = recup_id_slot_from_str_to_int("test_s0")
-        self.assertEqual(result, 0)
+    def test_recup_id_slot(self):
+        for input_str, expected in self.TEST_CASES:
+            with self.subTest(input=input_str):
+                self.assertEqual(recup_id_slot_from_str_to_int(input_str), expected)
 
 
 class TestRecuperationIndisponibilites(unittest.TestCase):
     """Tests pour recuperation_indisponibilites (profs)."""
 
     def test_single_indisponibilite(self):
-        df = pd.DataFrame({
-            'teacher_id': [1],
-            'day_of_week': ['Lundi'],
-            'start_time': ['08:00:00'],
-            'end_time': ['10:00:00']
-        })
+        df = make_indispo_df('teacher_id', 1, 'Lundi', '08:00:00', '10:00:00')
         result = recuperation_indisponibilites(df, {})
         self.assertIn(1, result)
-        self.assertIn('Lundi', result[1])
         self.assertEqual(result[1]['Lundi'], [(0, 4)])
 
     def test_multiple_teachers(self):
@@ -175,28 +127,16 @@ class TestRecuperationIndisponibilites(unittest.TestCase):
             'end_time': ['09:00:00', '16:00:00']
         })
         result = recuperation_indisponibilites(df, {})
-        self.assertIn(1, result)
-        self.assertIn(2, result)
         self.assertEqual(result[1]['Lundi'], [(0, 2)])
         self.assertEqual(result[2]['Mardi'], [(12, 16)])
 
     def test_empty_times(self):
-        df = pd.DataFrame({
-            'teacher_id': [1],
-            'day_of_week': ['Lundi'],
-            'start_time': [None],
-            'end_time': [None]
-        })
+        df = make_indispo_df('teacher_id', 1, 'Lundi', None, None)
         result = recuperation_indisponibilites(df, {})
         self.assertEqual(result[1]['Lundi'], [('', '')])
 
     def test_existing_dict(self):
-        df = pd.DataFrame({
-            'teacher_id': [1],
-            'day_of_week': ['Mardi'],
-            'start_time': ['10:00:00'],
-            'end_time': ['11:00:00']
-        })
+        df = make_indispo_df('teacher_id', 1, 'Mardi', '10:00:00', '11:00:00')
         existing = {1: {'Lundi': [(0, 2)]}}
         result = recuperation_indisponibilites(df, existing)
         self.assertIn('Lundi', result[1])
@@ -206,16 +146,10 @@ class TestRecuperationIndisponibilites(unittest.TestCase):
 class TestRecuperationIndisponibilitesRooms(unittest.TestCase):
     """Tests pour recuperation_indisponibilites_rooms."""
 
-    def test_single_room_indisponibilite(self):
-        df = pd.DataFrame({
-            'room_id': [10],
-            'day_of_week': ['Mercredi'],
-            'start_time': ['13:00:00'],
-            'end_time': ['15:00:00']
-        })
+    def test_single_room(self):
+        df = make_indispo_df('room_id', 10, 'Mercredi', '13:00:00', '15:00:00')
         result = recuperation_indisponibilites_rooms(df, {})
         self.assertIn(10, result)
-        self.assertIn('Mercredi', result[10])
         self.assertEqual(result[10]['Mercredi'], [(10, 14)])
 
     def test_multiple_rooms(self):
@@ -233,29 +167,18 @@ class TestRecuperationIndisponibilitesRooms(unittest.TestCase):
 class TestRecuperationIndisponibilitesGroup(unittest.TestCase):
     """Tests pour recuperation_indisponibilites_group."""
 
-    def test_single_group_indisponibilite(self):
-        df = pd.DataFrame({
-            'group_id': [5],
-            'day_of_week': ['Jeudi'],
-            'start_time': ['14:00:00'],
-            'end_time': ['16:00:00']
-        })
+    def test_single_group(self):
+        df = make_indispo_df('group_id', 5, 'Jeudi', '14:00:00', '16:00:00')
         result = recuperation_indisponibilites_group(df, {})
         self.assertIn(5, result)
-        self.assertIn('Jeudi', result[5])
         self.assertEqual(result[5]['Jeudi'], [(12, 16)])
 
 
 class TestRecuperationIndisponibilitesSlot(unittest.TestCase):
     """Tests pour recuperation_indisponibilites_slot."""
 
-    def test_single_slot_indisponibilite(self):
-        df = pd.DataFrame({
-            'slot_id': [100],
-            'day_of_week': ['Lundi'],
-            'start_time': ['08:00:00'],
-            'end_time': ['10:00:00']
-        })
+    def test_single_slot(self):
+        df = make_indispo_df('slot_id', 100, 'Lundi', '08:00:00', '10:00:00')
         result = recuperation_indisponibilites_slot(df, {})
         self.assertIn(100, result)
         self.assertIn(0, result[100])  # 0 = Lundi
@@ -266,29 +189,17 @@ class TestGetAvailabilityProfFromUnavailable(unittest.TestCase):
     """Tests pour get_availabilityProf_From_Unavailable."""
 
     def test_empty_dataframe(self):
-        df = pd.DataFrame({
-            'teacher_id': [],
-            'day_of_week': [],
-            'start_time': [],
-            'end_time': []
-        })
+        df = pd.DataFrame({'teacher_id': [], 'day_of_week': [], 'start_time': [], 'end_time': []})
         result = get_availabilityProf_From_Unavailable(df, 20)
         self.assertEqual(result, {})
 
     def test_with_indisponibilite(self):
-        df = pd.DataFrame({
-            'teacher_id': [1],
-            'day_of_week': ['Lundi'],
-            'start_time': ['08:00:00'],
-            'end_time': ['10:00:00']
-        })
+        df = make_indispo_df('teacher_id', 1, 'Lundi', '08:00:00', '10:00:00')
         result = get_availabilityProf_From_Unavailable(df, 20)
         self.assertIn(1, result)
-        # Le prof doit avoir des disponibilités pour les autres jours
-        self.assertIn(1, result[1])  # Mardi
-        self.assertIn(2, result[1])  # Mercredi
-        self.assertIn(3, result[1])  # Jeudi
-        self.assertIn(4, result[1])  # Vendredi
+        # Prof dispo les autres jours
+        for day in [1, 2, 3, 4]:  # Mardi à Vendredi
+            self.assertIn(day, result[1])
 
 
 class TestRecuperationDisponibilitesProfs(unittest.TestCase):
@@ -297,18 +208,13 @@ class TestRecuperationDisponibilitesProfs(unittest.TestCase):
     def test_jour_sans_indisponibilite(self):
         indispo = {1: {'Lundi': [(0, 4)]}}
         result = recuperation_disponibilites_profs(20, {}, indispo)
-        # Le prof doit être dispo les autres jours (Mardi à Vendredi)
         self.assertIn(1, result)
-        self.assertIn(1, result[1])  # Mardi
-        self.assertEqual(result[1][1], [(0, 20)])
+        self.assertEqual(result[1][1], [(0, 20)])  # Mardi dispo tout le jour
 
     def test_tous_les_jours_disponibles(self):
-        indispo = {1: {}}  # Aucune indisponibilité
+        indispo = {1: {}}
         result = recuperation_disponibilites_profs(20, {}, indispo)
-        self.assertIn(1, result)
-        # Doit avoir (0, 20) pour chaque jour
         for day in range(5):
-            self.assertIn(day, result[1])
             self.assertEqual(result[1][day], [(0, 20)])
 
 
