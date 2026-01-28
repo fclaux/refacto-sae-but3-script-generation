@@ -3,6 +3,7 @@ from logger_config import get_logger
 # Configuration du logger pour ce module
 logger = get_logger(__name__)
 
+
 def diagnose_feasibility(d):
     jours = d['jours']
     cpd = d['creneaux_par_jour']

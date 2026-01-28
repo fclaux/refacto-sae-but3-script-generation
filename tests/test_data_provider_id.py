@@ -347,11 +347,13 @@ class TestInsertDataWithPandas:
                 index=False
             )
 
-    def test_insert_data_with_pandas_error(self, data_provider, capsys):
+    def test_insert_data_with_pandas_error(self, data_provider, caplog):
+        import logging
         df_test = pd.DataFrame({'col': [1]})
 
-        with patch.object(df_test, 'to_sql', side_effect=Exception("DB Error")):
-            data_provider.insert_data_with_pandas(df_test, 'test_table')
+        with caplog.at_level(logging.ERROR):
+            with patch.object(df_test, 'to_sql', side_effect=Exception("DB Error")):
+                data_provider.insert_data_with_pandas(df_test, 'test_table')
 
-            captured = capsys.readouterr()
-            assert "Erreur lors de l'insertion" in captured.out
+        # Vérifier que le message d'erreur est dans les logs
+        assert any("Erreur lors de l'insertion" in record.message for record in caplog.records)

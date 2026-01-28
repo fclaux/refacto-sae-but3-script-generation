@@ -212,18 +212,17 @@ def test_generate_graphical_schedule_calls_providers_and_generates(monkeypatch):
     mock_show.assert_called_once()
 
 
-def test_generate_graphical_schedule_handles_exception(monkeypatch):
+def test_generate_graphical_schedule_handles_exception(caplog):
     """Test que _generate_graphical_schedule gère les exceptions correctement"""
+    import logging
     sv = object.__new__(SolutionVisualizer)
     sv.temp = []
 
     data_provider = Mock()
     data_provider.get_list_room.side_effect = Exception("DB Error")
 
-    # Capture les prints
-    with patch('builtins.print') as mock_print:
+    with caplog.at_level(logging.ERROR):
         sv._generate_graphical_schedule(data_provider, week_id=1)
 
-        # Vérifie qu'un message d'erreur a été affiché
-        calls = [str(call) for call in mock_print.call_args_list]
-        assert any("ERREUR lors de la génération graphique" in str(call) for call in calls)
+    # Vérifie qu'un message d'erreur a été loggé
+    assert any("ERREUR lors de la génération graphique" in record.message for record in caplog.records)

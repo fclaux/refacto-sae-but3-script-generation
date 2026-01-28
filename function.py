@@ -92,8 +92,8 @@ def get_availabilityRoom_From_Unavailable(df_dispos,creneaux_par_jour):
     indisponibilites_salles=recuperation_indisponibilites_rooms(df_dispos, indisponibilites_salles)
 
     disponibilites_salles=recuperation_disponibilites_rooms(creneaux_par_jour, disponibilites_salles, indisponibilites_salles)
-    logger.info("indisponibilites_salles : ",indisponibilites_salles)
-    logger.info("disponibilites_salles : ",disponibilites_salles)
+    logger.info(f"indisponibilites_salles : {indisponibilites_salles}")
+    logger.info(f"disponibilites_salles : {disponibilites_salles}")
     #disponibilites_salles= {16: {0: [(9, 23)], 1: [(0, 9)], 2: [(0, 9)], 4: [(9, 20)]}}
 
     return disponibilites_salles
@@ -105,7 +105,7 @@ def recuperation_disponibilites_rooms(creneaux_par_jour, disponibilites_salles: 
     for i in indisponibilites_salles:
         for day in liste_jour:
             if day in indisponibilites_salles[i]:
-                logger.info("day : ", day)
+                logger.info(f"day : {day}")
                 h_min = 0
                 h_max = creneaux_par_jour
                 for k in indisponibilites_salles[i][day]:
