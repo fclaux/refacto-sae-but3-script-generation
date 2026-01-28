@@ -13,7 +13,7 @@ engine = get_engine()
 # Jours de la semaine pour affichage lisible
 JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
 
-# Types de cours (à adapter selon ta table type_id → tu peux me donner la table types si besoin)
+# Types de cours (à adapter selon ta table type_id)
 TYPES_COURS = {1: "CM", 2: "TD", 3: "TP", 4: "Examen", 5: "Autre"}
 
 class EDTViewerApp:
@@ -125,7 +125,7 @@ class EDTViewerApp:
 
         except Exception as e:
             messagebox.showerror("Erreur", f"Impossible de charger l'emploi du temps :\n{e}")
-            print(e)  # pour debug dans la console
+            print(e)  # pour débug dans la console
 
     def afficher_dans_tableau(self, df):
         for i in self.tree.get_children():
@@ -453,7 +453,7 @@ def build_config_from_db(
     print(config)
     return config
 
-# ==================== LANCEMENT ====================
+# ==================== DÉMARRAGE ====================
 if __name__ == "__main__":
     root = tk.Tk()
     app = EDTViewerApp(root)

@@ -68,7 +68,7 @@ def recuperation_disponibilites_profs(creneaux_par_jour, disponibilites_profs: d
 def recuperation_indisponibilites(df_dispos, indisponibilites_profs: dict[Any, Any])-> dict[Any, Any]:
     for _, row in df_dispos.iterrows():
         teacher_id = row['teacher_id']
-        day_id = (row['day_of_week'])  # 0 = lundi, 4 = vendredi
+        day_id = (row['day_of_week'])  # 0 = Lundi, 4 = Vendredi
         debut_str = get_start_time(row)
         fin_str = get_end_time(row)
         if debut_str != "":
@@ -131,7 +131,7 @@ def recup_id_slot_from_str_to_int(cid:str):
 def recuperation_indisponibilites_rooms(df_dispos, indisponibilites_profs: dict[Any, Any])-> dict[Any, Any]:
     for _, row in df_dispos.iterrows():
         room_id = row['room_id']
-        day_id = (row['day_of_week'])  # 0 = lundi, 4 = vendredi
+        day_id = (row['day_of_week'])  # 0 = Lundi, 4 = Vendredi
         debut_str = get_start_time(row)
         fin_str = get_end_time(row)
         if debut_str != "":
@@ -180,7 +180,7 @@ def recuperation_disponibilites_group(creneaux_par_jour, disponibilites_groupes:
 def recuperation_indisponibilites_group(df_dispos, indisponibilites_groupes: dict[Any, Any])-> dict[Any, Any]:
     for _, row in df_dispos.iterrows():
         group_id = row['group_id']
-        day_id = (row['day_of_week'])  # 0 = lundi, 4 = vendredi
+        day_id = (row['day_of_week'])  # 0 = Lundi, 4 = Vendredi
         debut_str = get_start_time(row)
         fin_str = get_end_time(row)
         if debut_str != "":
@@ -226,7 +226,7 @@ def recuperation_indisponibilites_slot(df_dispos, indisponibilites_groupes: dict
 
     for _, row in df_dispos.iterrows():
         slot_id = row['slot_id']
-        day_id = (row['day_of_week'])  # 0 = lundi, 4 = vendredi
+        day_id = (row['day_of_week'])  # 0 = Lundi, 4 = Vendredi
         debut_str = get_start_time(row)
         fin_str = get_end_time(row)
         if debut_str != "":

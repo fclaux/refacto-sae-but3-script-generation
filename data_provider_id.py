@@ -222,7 +222,7 @@ class DataProviderID:
 
             for _, row in df_dispos.iterrows():
                 teacher_id = row['teacher_id']
-                day_id = self.convert_daystring_to_int((row['day_of_week']))  # 0 = lundi, 4 = vendredi
+                day_id = self.convert_daystring_to_int((row['day_of_week']))  # 0 = Lundi, 4 = Vendredi
 
                 debut_slot = self.get_start_time(row)
                 fin_slot = self.get_end_time(row)
@@ -305,7 +305,7 @@ class DataProviderID:
             profs_autorises = profs_par_slot.get(idx, [])
             indices_profs = [i for i, name in enumerate(profs) if name in profs_autorises]
             if not indices_profs:
-                print(f"Warning: Aucun prof autorisé pour {cid}")
+                print(f"Attention: Aucun prof autorisé pour {cid}")
                 profs.append("None_"+str(cpt_no_profs))
                 index=profs.index("None_"+str(cpt_no_profs))
                 indices_profs = [index]#list(range(len(profs)))

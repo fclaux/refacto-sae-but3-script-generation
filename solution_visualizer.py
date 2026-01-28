@@ -96,9 +96,9 @@ class SolutionVisualizer:
             #pass
 
     def _generate_graphical_schedule(self,DataProviderInsert,week_id):
-        print("\n5. Generating graphical schedules...")
-        # Example for generating schedules (adapt to your needs)
-        # You must adjust the parameters of recup.recup_edt
+        print("\n5. Génération des emplois du temps graphiques...")
+        # Exemple de génération des emplois du temps (adapter selon vos besoins)
+        # Vous devez ajuster les paramètres de recup.recup_edt
         try:
             t: Dict[str, Dict[str, list]] = {"A1": {"groupes": ["G1", "G2", "G3","G1A", "G2A", "G3A","G1B", "G2B", "G3B"]}}
             list_room=DataProviderInsert.get_list_room()
@@ -112,10 +112,10 @@ class SolutionVisualizer:
             sg.generate_schedule("A3", week_id, t["A3"]["groupes"], courses_list_B3)
 
 
-            sg.plt.show()  # Display all plots
-            print("   -> Graphics generated successfully.")
+            sg.plt.show()  # Afficher tous les graphiques
+            print("   -> Graphiques générés avec succès.")
         except Exception as e:
-            print(f"   -> ERROR during graphical generation: {e}")
+            print(f"   -> ERREUR lors de la génération graphique : {e}")
 
 # Remplace toute la fonction par ça :
 GROUPE_TO_LIST = {

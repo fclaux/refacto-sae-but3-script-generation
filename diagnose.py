@@ -4,38 +4,38 @@ def diagnose_feasibility(d):
     slots = d['slots']  # list of (day, offset)
     fenetre_midi = set(d['fenetre_midi'])
     nb_slots = d['nb_slots']
-    salles = list(d['salles'].items())  # [(name,cap), ...] insertion order kept
+    salles = list(d['salles'].items())  # [(nom, capacité), ...] ordre d'insertion conservé
 
-    # Per-day available offsets (non-midi)
+    # Créneaux disponibles par jour (hors pause midi)
     usable_offsets = [o for o in range(cpd) if o not in fenetre_midi]
     usable_per_day = len(usable_offsets)
     total_usable_slots = usable_per_day * jours
 
     problems = {'no_valid_start': [], 'no_room': [], 'group_overbooked': []}
 
-    # 1) check each course for at least one valid start
+    # 1) Vérifier que chaque cours a au moins un créneau de départ valide
     for c in d['cours']:
         cid = c['id']
         duration = d['duree_cours'][cid]
         valid_starts = []
-        # enumerate slots s by (day, offset)
+        # Énumérer les créneaux s par (jour, offset)
         for s, (day, offset) in enumerate(slots):
-            # must fit in the day (not overflow)
+            # Doit tenir dans la journée (pas de débordement)
             if offset + duration > cpd:
                 continue
-            # must not intersect midi window
+            # Ne doit pas chevaucher la fenêtre midi
             intersects_midi = any((offset + i) in fenetre_midi for i in range(duration))
             if intersects_midi:
                 continue
-            # must not cross into a different day — already ensured by offset + duration <= cpd
+            # Ne doit pas déborder sur un autre jour — déjà assuré par offset + duration <= cpd
             valid_starts.append((s, day, offset))
         if not valid_starts:
             problems['no_valid_start'].append((cid, duration))
-        # store number for info
-        # print(f"{cid}: {len(valid_starts)} valid starts")
+        # Stocker le nombre pour info
+        # print(f"{cid}: {len(valid_starts)} départs valides")
 
-    # 2) check room capacities
-    # for each course, check if at least one room has capacity >= group size
+    # 2) Vérifier les capacités des salles
+    # Pour chaque cours, vérifier qu'au moins une salle a une capacité >= taille du groupe
     for c in d['cours']:
         cid = c['id']
         group = c['groups'][0]
@@ -44,8 +44,8 @@ def diagnose_feasibility(d):
         if not ok:
             problems['no_room'].append((cid, group, taille))
 
-    # 3) crude group-level capacity: total required slots <= total usable slots
-    # (necessary but not sufficient check)
+    # 3) Vérification grossière de capacité par groupe : créneaux requis <= créneaux disponibles
+    # (vérification nécessaire mais non suffisante)
     group_required = {}
     for grp, course_ids in d['map_groupe_cours'].items():
         total = 0
@@ -55,7 +55,7 @@ def diagnose_feasibility(d):
         if total > total_usable_slots:
             problems['group_overbooked'].append((grp, total, total_usable_slots))
 
-    # Print summary
+    # Afficher le résumé
     print("=== Diagnostic faisabilité (statique) ===")
     print(f"Jours: {jours}, creneaux_par_jour: {cpd}, slots total: {nb_slots}")
     print(f"Slots utilisables par jour (hors midi): {usable_per_day}, total utilisables: {total_usable_slots}")

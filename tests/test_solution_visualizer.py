@@ -226,4 +226,4 @@ def test_generate_graphical_schedule_handles_exception(monkeypatch):
 
         # Vérifie qu'un message d'erreur a été affiché
         calls = [str(call) for call in mock_print.call_args_list]
-        assert any("ERROR during graphical generation" in str(call) for call in calls)
+        assert any("ERREUR lors de la génération graphique" in str(call) for call in calls)
