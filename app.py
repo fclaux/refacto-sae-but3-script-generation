@@ -1,3 +1,7 @@
+"""
+Module principal de génération d'emploi du temps.
+Gère le diagnostic d'infaisabilité et l'optimisation.
+"""
 import os
 import sys
 
@@ -21,7 +25,7 @@ if getattr(sys, 'frozen', False):
 import argparse
 import itertools
 import time
-import sys
+from pathlib import Path
 
 from ortools.sat.python import cp_model
 
@@ -29,16 +33,27 @@ import diagnose
 from data_provider_id import DataProviderID
 from solution_visualizer import SolutionVisualizer
 from time_table_model import TimetableModel
+from logger_config import get_logger
 
+# Configuration du logger pour ce module
+logger = get_logger(__name__)
+
+# Ajout du chemin OR-Tools si nécessaire
+ortools_path = Path(r"C:\Users\rouff\AppData\Local\Programs\Python\Python313\Lib\site-packages\ortools")
+if ortools_path.exists():
+    path_to_add = str(ortools_path.parent)
+    if path_to_add not in sys.path:
+        sys.path.insert(0, path_to_add)
+        logger.info(f"PATH ajusté pour OR-Tools: {path_to_add}")
 
 
 def test_combination(model_class, data, disabled_blocks, timeout=60):
     """Teste si en désactivant une liste de blocs, le problème devient faisable"""
-    print(f"\n{'='*70}")
+    logger.info("="*70)
     if len(disabled_blocks) == 1:
-        print(f"TEST UNIQUE → Désactivation : {disabled_blocks[0]}")
+        logger.info(f"TEST UNIQUE → Désactivation : {disabled_blocks[0]}")
     else:
-        print(f"TEST COMBINAISON → Désactivation : {' + '.join(disabled_blocks)}")
+        logger.info(f"TEST COMBINAISON → Désactivation : {' + '.join(disabled_blocks)}")
 
     start = time.perf_counter()
     scheduler = model_class(data)
@@ -54,11 +69,11 @@ def test_combination(model_class, data, disabled_blocks, timeout=60):
     elapsed = time.perf_counter() - start
 
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        print(f"SOLUTION TROUVÉE en {elapsed:.2f}s !")
-        print(f"LES CONTRAINTES BLOQUANTES SONT DANS : {', '.join(disabled_blocks)}")
+        logger.info(f"SOLUTION TROUVÉE en {elapsed:.2f}s !")
+        logger.info(f"LES CONTRAINTES BLOQUANTES SONT DANS : {', '.join(disabled_blocks)}")
         return True
     else:
-        print(f"Infaisable ({solver.StatusName(status)}) après {elapsed:.2f}s")
+        logger.warning(f"Infaisable ({solver.StatusName(status)}) après {elapsed:.2f}s")
         return False
 
 
@@ -73,41 +88,40 @@ def diagnostic_automatique(model_class, data, timeout_per_test=60):
         "salles dispo"
     ]
 
-    print("DIAGNOSTIC AUTOMATIQUE DE L'INFAISABILITÉ")
-    print("="*70)
+    logger.info("🔍 DIAGNOSTIC AUTOMATIQUE DE L'INFAISABILITÉ")
+    logger.info("="*70)
 
     # === ÉTAPE 1 : Test un par un ===
-    print("\n1. Test des blocs un par un...")
+    logger.info("\n1. Test des blocs un par un...")
     for block in blocks:
         if test_combination(model_class, data, [block], timeout_per_test):
-            print(f"\nUN SEUL BLOC SUFFIT → '{block}' est la source du problème.")
+            logger.info(f"\n✅ UN SEUL BLOC SUFFIT → '{block}' est la source du problème.")
             return
 
-    print("\nAucun bloc seul ne résout le problème.")
+    logger.info("\n⚠️ Aucun bloc seul ne résout le problème.")
 
     # === ÉTAPE 2 : Test des paires ===
-    print("\n2. Test des combinaisons de 2 blocs...")
+    logger.info("\n2. Test des combinaisons de 2 blocs...")
     for combo in itertools.combinations(blocks, 2):
         if test_combination(model_class, data, list(combo), timeout_per_test):
-            print(f"\nCOMBINAISON GAGNANTE → Il fallait désactiver : {combo[0]} + {combo[1]}")
+            logger.info(f"\n✅ COMBINAISON GAGNANTE → Il fallait désactiver : {combo[0]} + {combo[1]}")
             return
 
-    print("\nAucune paire ne suffit.")
+    logger.info("\n⚠️ Aucune paire ne suffit.")
 
     # === ÉTAPE 3 : Test des triplets ===
-    print("\n3. Test des combinaisons de 3 blocs...")
+    logger.info("\n3. Test des combinaisons de 3 blocs...")
     for combo in itertools.combinations(blocks, 3):
         if test_combination(model_class, data, list(combo), timeout_per_test):
-            print(f"\nCOMBINAISON GAGNANTE → Il fallait désactiver : {', '.join(combo)}")
+            logger.info(f"\n✅ COMBINAISON GAGNANTE → Il fallait désactiver : {', '.join(combo)}")
             return
 
-    print("\nMême en désactivant 3 blocs, toujours infaisable.")
-    print("Possibles causes restantes :")
-    print("   • Données incohérentes (ex: cours sans prof possible, salle trop petite obligatoire)")
-    print("   • Problème dans les variables de décision ou les contraintes de base")
-    print("   • Besoin de désactiver plus de 3 blocs (rare) ou assouplir les contraintes souples")
-    print("\nProchaine étape recommandée : utiliser le module 'diagnose.py' avec explain_infeasibility()")
-
+    logger.warning("\n❌ Même en désactivant 3 blocs, toujours infaisable.")
+    logger.warning("Possibles causes restantes :")
+    logger.warning("   • Données incohérentes (ex: cours sans prof possible, salle trop petite obligatoire)")
+    logger.warning("   • Problème dans les variables de décision ou les contraintes de base")
+    logger.warning("   • Besoin de désactiver plus de 3 blocs (rare) ou assouplir les contraintes souples")
+    logger.info("\n💡 Prochaine étape recommandée : utiliser le module 'diagnose.py' avec explain_infeasibility()")
 
 
 # ==============================================================================
@@ -115,12 +129,13 @@ def diagnostic_automatique(model_class, data, timeout_per_test=60):
 # ==============================================================================
 if __name__ == "__main__":
     start_time = time.perf_counter()
-    
+
     parser = argparse.ArgumentParser(description="Exemple d'entrée en ligne de commande")
     parser.add_argument("--id_semaine", type=int, required=True, help="Un entier en entrée correspondant à la semaine à générer")
     argvs = parser.parse_args()
 
     print("Vous avez fourni :", argvs.id_semaine)
+    logger.info(f"Vous avez fourni : {argvs.id_semaine}")
 
     # Utilise la configuration depuis .env via db_utils
     DataProviderInsert = DataProviderID()
@@ -138,12 +153,12 @@ if __name__ == "__main__":
         visualizer.display(DataProviderInsert,argvs.id_semaine)
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        print(f"Programme exécuté en : {execution_time: .5f} secondes")
+        logger.info(f"Programme exécuté en : {execution_time: .5f} secondes")
     else:
-        print("\nÉchec de la résolution. Le modèle reste infaisable même avec des contraintes assouplies.")
-        print(
+        logger.warning("\nÉchec de la résolution. Le modèle reste infaisable même avec des contraintes assouplies.")
+        logger.warning(
             "Causes possibles : Surcharge totale des ressources (pas assez de salles/profs pour le nombre de cours) ou une autre contrainte dure est trop restrictive (ex: pause midi).")
         #diagnostic_automatique(TimetableModelId, model_data, timeout_per_test=90)
 
         total_time = time.perf_counter() - start_time
-        print(f"\nDiagnostic terminé en {total_time:.1f} secondes.")
+        logger.info(f"\nDiagnostic terminé en {total_time:.1f} secondes.")

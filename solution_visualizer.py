@@ -1,6 +1,11 @@
 from typing import Dict, Any
 
 from Front import schedule_generator as sg
+from logger_config import get_logger
+
+# Configuration du logger pour ce module
+logger = get_logger(__name__)
+
 
 
 # ==============================================================================
@@ -15,7 +20,7 @@ class SolutionVisualizer:
         self.planning = self._build_planning_from_solution()
 
     def display(self,DataProviderInsert,week_id):
-        print("\n4. Affichage de la solution trouvée :")
+        logger.info("\n4. Affichage de la solution trouvée :")
         self._print_schedule_to_console()
         #self._check_violations()  # Affiche les violations
 
@@ -39,14 +44,14 @@ class SolutionVisualizer:
         return planning
 
     def _check_violations(self):
-        print("\n--- Vérification des violations ---")
+        logger.info("\n--- Vérification des violations ---")
         violations = [v.Name() for v in self._vars.get('penalites_capacite', []) if self.solver.Value(v) == 1]
         if violations:
-            print(f"🔴 {len(violations)} VIOLATION(S) DE CAPACITÉ DÉTECTÉE(S) :")
-            for v_name in violations: print(f"   - {v_name}")
+            logger.info(f"🔴 {len(violations)} VIOLATION(S) DE CAPACITÉ DÉTECTÉE(S) :")
+            for v_name in violations: logger.info(f"   - {v_name}")
         else:
-            print("🟢 Aucune violation de contrainte souple détectée. La solution est valide !")
-        print("---------------------------------")
+            logger.info("🟢 Aucune violation de contrainte souple détectée. La solution est valide !")
+        logger.info("---------------------------------")
 
     def _print_schedule_to_console(self):
         def slot_to_time(t: int):
@@ -56,7 +61,7 @@ class SolutionVisualizer:
         self.temp = []  # Liste qui contiendra tous les cours avec infos et durée
 
         for d_idx in range(self.data['jours']):
-            print(f"\n=== Day {d_idx + 1} ===")
+            logger.info(f"\n=== Day {d_idx + 1} ===")
 
             cours_en_cours = {}
 
@@ -69,7 +74,7 @@ class SolutionVisualizer:
                 if entries:
                     for (cid, room_str, teacher_str) in entries:
                         if self.actual_starts.get(cid) == global_t:
-                            print(f"  {time_str} : {cid} (Room: {room_str}, Teacher: {teacher_str}) Début")
+                            logger.info(f"  {time_str} : {cid} (Room: {room_str}, Teacher: {teacher_str}) Début")
 
                             dict_infos_schedule_gen = {
                                 "day": d_idx,
@@ -84,19 +89,19 @@ class SolutionVisualizer:
                             cours_en_cours[cid] = dict_infos_schedule_gen
 
                         else:
-                            print(f"  {time_str} : {cid} (Room: {room_str}, Teacher: {teacher_str})")
+                            logger.info(f"  {time_str} : {cid} (Room: {room_str}, Teacher: {teacher_str})")
                             cours_en_cours[cid]["duration"] += 1
                     for cours_dict in cours_en_cours.values():
                         if cours_dict not in self.temp:
                             self.temp.append(cours_dict)
                 else:
                     if not self.data['fenetre_midi'] or t_in_day not in self.data['fenetre_midi']:
-                        print(f"  {time_str} : --")
-            print("-" * 20)
+                        logger.info(f"  {time_str} : --")
+            logger.info("-" * 20)
             #pass
 
     def _generate_graphical_schedule(self,DataProviderInsert,week_id):
-        print("\n5. Génération des emplois du temps graphiques...")
+        logger.info("\n5. Génération des emplois du temps graphiques...")
         # Exemple de génération des emplois du temps (adapter selon vos besoins)
         # Vous devez ajuster les paramètres de recup.recup_edt
         try:
@@ -112,10 +117,10 @@ class SolutionVisualizer:
             sg.generate_schedule("A3", week_id, t["A3"]["groupes"], courses_list_B3)
 
 
-            sg.plt.show()  # Afficher tous les graphiques
-            print("   -> Graphiques générés avec succès.")
+            sg.plt.show()  # Display all plots
+            logger.info("   -> Graphiques générés avec succès.")
         except Exception as e:
-            print(f"   -> ERREUR lors de la génération graphique : {e}")
+            logger.error(f"   -> ERREUR lors de la génération graphique : {e}")
 
 # Remplace toute la fonction par ça :
 GROUPE_TO_LIST = {

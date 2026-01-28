@@ -1,9 +1,12 @@
-# ==============================================================================
-# CLASSE 2: LE MODÈLE D'OPTIMISATION (TimetableModel)
-# ==============================================================================
-from typing import Dict, Any
-
+"""
+Modèle d'optimisation pour la génération d'emplois du temps.
+"""
+from typing import Dict, Any, List, Optional
 from ortools.sat.python import cp_model
+from logger_config import get_logger
+
+# Configuration du logger pour ce module
+logger = get_logger(__name__)
 
 from function import recup_cours, recup_id_slot_from_str_to_int
 
@@ -17,21 +20,21 @@ class TimetableModel:
         self._ordres_a_forcer=[]
 
     def build_model(self):
-        print("2. Construction du modèle d'optimisation...")
+        logger.info("2. Construction du modèle d'optimisation...")
         self._create_decision_variables()
         self._add_linking_constraints()
         self._add_structural_constraints()
         self.appliquer_ordre_cm_td_tp()  # ← ICI on les APPLIQUE (variables existent !)
         self._define_objective_function()  # Déplacé avant la résolution
-        print("   -> Modèle construit.")
+        logger.info("   -> Modèle construit.")
 
     def solve(self, max_time_seconds: int = 600) -> Dict[str, Any]:
-        print("\n3. Lancement de la résolution...")
+        logger.info("\n3. Lancement de la résolution...")
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = max_time_seconds
         solver.parameters.num_search_workers = 8
         status = solver.Solve(self.model)
-        print(f"   -> Résolution terminée avec le statut : {solver.StatusName(status)}")
+        logger.info(f"   -> Résolution terminée avec le statut : {solver.StatusName(status)}")
         return {"status": status, "solver": solver,
                 "vars": self._vars if status in (cp_model.OPTIMAL, cp_model.FEASIBLE) else None}
 
@@ -98,7 +101,7 @@ class TimetableModel:
 
 
     def contrainte_hierarchique(self, d: dict[str, Any]):
-        print("   -> Ajout des contraintes hiérarchiques (sous-groupes ↔ groupe parent)")
+        logger.info("   -> Ajout des contraintes hiérarchiques (sous-groupes ↔ groupe parent)")
 
         # Définit la relation : sous-groupe → groupe parent
         hierarchie = {
@@ -121,7 +124,7 @@ class TimetableModel:
             if sous_groupe not in d['map_groupe_cours'] or groupe_parent not in d['map_groupe_cours']:
                 continue
 
-            print(f"      → {sous_groupe} bloque {groupe_parent} (et vice versa)")
+            logger.info(f"      → {sous_groupe} bloque {groupe_parent} (et vice versa)")
 
             for t in range(d['nb_slots']):
                 # Tous les cours du sous-groupe
@@ -181,7 +184,7 @@ class TimetableModel:
                 self.model.Add(sum(q_vars) <= 1)
 
     def contrainte_disponibilites_professeurs(self, d):
-        print("   -> Application des disponibilités horaires des professeurs")
+        logger.info("   -> Application des disponibilités horaires des professeurs")
         dispos = d.get('disponibilites_profs', {})
         prof_to_teacher_id = d.get("prof_to_teacher_id", {})
 
@@ -216,7 +219,7 @@ class TimetableModel:
                             self.model.AddBoolOr([start_var.Not(), z.Not()])
 
     def contrainte_disponibilites_salles(self, d):
-        print("   -> Application des disponibilités horaires des salles")
+        logger.info("   -> Application des disponibilités horaires des salles")
         dispos = d.get('disponibilites_salles', {})
 
         # 🚨 CORRECTION : On itère sur l'indice physique (0, 1, 2, ...) pour correspondre à y_salle
@@ -259,7 +262,7 @@ class TimetableModel:
                         if z is not None:
                             self.model.AddBoolOr([start_var.Not(), z.Not()])
                             # Le print est maintenant plus clair :
-                            # print(f"BLOQUÉ: Cours {cid} ne peut pas démarrer à {s} ET utiliser salle ID {salle_name} (Indice {p_idx}) Jour {day_idx}")
+                            # logger.info(f"BLOQUÉ: Cours {cid} ne peut pas démarrer à {s} ET utiliser salle ID {salle_name} (Indice {p_idx}) Jour {day_idx}")
 
     from typing import Any
 
@@ -270,7 +273,7 @@ class TimetableModel:
         Un cours ne peut démarrer à un créneau (s) si l'un de ses groupes associés
         n'est pas disponible pendant toute la durée du cours à ce créneau.
         """
-        print("   -> Application des disponibilités horaires des groupes")
+        logger.info("   -> Application des disponibilités horaires des groupes")
         # Structure de 'disponibilites_groupes' :
         # { 'GROUPE_ID': { jour_idx: [(debut_creneau, fin_creneau), ...] } }
         dispos = d.get('disponibilites_groupes', {})
@@ -313,16 +316,16 @@ class TimetableModel:
                         # 'start' est une variable booléenne qui vaut 1 si le cours c démarre au slot s.
                         self.model.Add(start_var == False)
                         # Note : Add(start_var.Not()) est équivalent à Add(start_var == False)
-                        # print(f"BLOQUÉ: Cours {cid} ne peut pas démarrer à {s} (Jour {day_idx}, Offset {offset}) car Groupe {groupe_id} est indisponible.")
+                        # logger.info(f"BLOQUÉ: Cours {cid} ne peut pas démarrer à {s} (Jour {day_idx}, Offset {offset}) car Groupe {groupe_id} est indisponible.")
                         break  # Un seul groupe indisponible suffit pour bloquer le cours au slot s
 
     def contrainte_disponibilites_salles_generalisee(self, d):
-        print("   -> Application générale des disponibilités horaires des salles (Robuste)")
+        logger.info("   -> Application générale des disponibilités horaires des salles (Robuste)")
         dispos = d.get('disponibilites_salles', {})
-        print("dispos salles :",dispos)
+        logger.debug(f"dispos salles : {dispos}")
         if not dispos:
             # Aucune contrainte de disponibilité spécifique à appliquer
-            print("      → Aucune disponibilité spécifique trouvée, skipping.")
+            logger.info("      → Aucune disponibilité spécifique trouvée, skipping.")
             return
 
         # 1. Créer le MAPPING ID_SALLE -> INDICE_PHYSIQUE
@@ -340,7 +343,7 @@ class TimetableModel:
 
             if salle_idx is None:
                 # La salle dans 'dispos' n'existe pas dans la liste globale des salles du modèle.
-                print(f"      → Avertissement : Salle ID {salle_id} dans 'dispos' non trouvée. Ignorée.")
+                logger.info(f"      → Avertissement : Salle ID {salle_id} dans 'dispos' non trouvée. Ignorée.")
                 continue
 
             # 4. Itérer sur tous les cours et créneaux (S, jour, offset)
@@ -376,15 +379,15 @@ class TimetableModel:
                     if not rentre_dans_plage:
                         # Contrainte d'élimination : (start(C, S) est faux) OU (y_salle(C, R) est faux)
                         self.model.AddBoolOr([start_var.Not(), z_salle.Not()])
-                        # print(f"BLOQUÉ: Cours {cid} ne peut pas démarrer à {s} ET utiliser salle ID {salle_id}")
+                        # logger.info(f"BLOQUÉ: Cours {cid} ne peut pas démarrer à {s} ET utiliser salle ID {salle_id}")
 
     def contrainte_disponibilites_cour_heure(self, d):
-        print("   -> Application des horaires obligatoires pour les slots/salles")
+        logger.info("   -> Application des horaires obligatoires pour les slots/salles")
         # On utilise 'obligations_slots' pour clarifier l'intention
         obligations = d.get('obligations_slots', {})
 
         if not obligations:
-            print("      → Aucune contrainte d'horaire obligatoire spécifique trouvée, skipping.")
+            logger.info("      → Aucune contrainte d'horaire obligatoire spécifique trouvée, skipping.")
             return
 
         # 1. Itérer sur TOUS les SLOTS/SALLES qui ont des contraintes d'horaire obligatoires
@@ -431,10 +434,10 @@ class TimetableModel:
                         # Nous BLOQUONS le démarrage du cours à ce slot/créneau.
                         # Contrainte : start(C, S) est faux
                         self.model.AddBoolOr([start_var.Not()])
-                        # print(f"BLOQUÉ: Cours {cid} DOIT utiliser slot {slot_id} mais l'horaire {s} n'est pas obligatoire.")
+                        # logger.info(f"BLOQUÉ: Cours {cid} DOIT utiliser slot {slot_id} mais l'horaire {s} n'est pas obligatoire.")
 
     def contrainte_disponibilites_amphi_c(self, d):
-        print("   -> Application des disponibilités de l'Amphi C (version ROBUSTE)")
+        logger.info("   -> Application des disponibilités de l'Amphi C (version ROBUSTE)")
 
         liste_amphi_c = d.get("liste_amphi_c")
         if not liste_amphi_c:
@@ -443,9 +446,9 @@ class TimetableModel:
         # Trouver l'indice de l'Amphi C
         try:
             amphi_c_idx = next(i for i, name in enumerate(d['salles']) if name == "AmphiC" or name == 16)
-            print(f"      → Amphi C trouvé → indice {amphi_c_idx}")
+            logger.info(f"      → Amphi C trouvé → indice {amphi_c_idx}")
         except StopIteration:
-            print("      → Amphi C non trouvé dans les salles")
+            logger.info("      → Amphi C non trouvé dans les salles")
             return
 
         for c in d['cours']:
@@ -480,7 +483,7 @@ class TimetableModel:
                     self.model.AddBoolOr([start_var.Not(), y_amphi.Not()])
 
     def contrainte_ordre_cm_td_tp(self, d):
-        print("   → FORÇAGE ORDRE CM → TD → TP : VERSION QUI MARCHE VRAIMENT")
+        logger.info("   → FORÇAGE ORDRE CM → TD → TP : VERSION QUI MARCHE VRAIMENT")
 
         # On va extraire proprement le nom de la matière (tout entre le type et le _sXXXXX final)
         cours_par_matiere = {}
@@ -513,14 +516,14 @@ class TimetableModel:
                 for td in cours["TD"]:
                     ordres.append((td, tp))
         self._ordres_a_forcer = ordres
-        print(f"      → {len(ordres)} relations d'ordre détectées et prêtes (CM→TD→TP)")
+        logger.info(f"      → {len(ordres)} relations d'ordre détectées et prêtes (CM→TD→TP)")
 
     def appliquer_ordre_cm_td_tp(self):
-        print("ordre : ",self._ordres_a_forcer)
+        logger.debug(f"ordre : {self._ordres_a_forcer}")
         if not hasattr(self, '_ordres_a_forcer') or not self._ordres_a_forcer:
-            print("      → Aucune contrainte d'ordre à appliquer")
+            logger.info("      → Aucune contrainte d'ordre à appliquer")
             return
-        print(f"   → APPLICATION DES {len(self._ordres_a_forcer)} CONTRAINTES D'ORDRE (CM avant TD avant TP)")
+        logger.info(f"   → APPLICATION DES {len(self._ordres_a_forcer)} CONTRAINTES D'ORDRE (CM avant TD avant TP)")
         total_ajoutees = 0
 
         for cid_avant, cid_apres in self._ordres_a_forcer:
@@ -536,7 +539,7 @@ class TimetableModel:
                         self.model.AddBoolOr([v1.Not(), v2.Not()])
                         total_ajoutees += 1
 
-        print(f"      → {total_ajoutees} contraintes d'interdiction ajoutées → ORDRE FORCÉ À 100%")
+        logger.info(f"      → {total_ajoutees} contraintes d'interdiction ajoutées → ORDRE FORCÉ À 100%")
 
     def penaliser_fin_tardive(self, d, cout_penalite: int = 500, limite_offset_fin: int = 20):
         """
@@ -544,7 +547,7 @@ class TimetableModel:
         qui, s'il démarre à un slot (S), finit après la limite_offset_fin.
         Ces variables seront ajoutées à l'objectif de minimisation.
         """
-        print(
+        logger.info(
             f"   -> Application de la préférence : Pénaliser les fins après le slot {limite_offset_fin} (Coût: {cout_penalite})")
 
         self.penalites_fin_tardive = []  # Liste pour stocker les variables de pénalité
@@ -575,14 +578,14 @@ class TimetableModel:
                     # Stocker la pénalité. On stocke le terme (variable * poids)
                     self.penalites_fin_tardive.append(b_late_end * cout_penalite)
 
-        print(f"      → {len(self.penalites_fin_tardive)} départs de cours tardifs potentiels détectés.")
+        logger.info(f"      → {len(self.penalites_fin_tardive)} départs de cours tardifs potentiels détectés.")
     def _define_objective_function(self):
         """Définit les contraintes souples et l'objectif de minimisation."""
         d = self.data
         penalites_capacite = []
 
         # TRANSFORMATION DE LA CONTRAINTE DE CAPACITÉ EN CONTRAINTE SOUPLE
-        print("   -> Application de la contrainte de capacité en mode 'souple'.")
+        logger.info("   -> Application de la contrainte de capacité en mode 'souple'.")
         for c in d['cours']:
             cid, group_name = c['id'], c['groups'][0]
             taille_groupe = d['taille_groupes'].get(group_name, 0)
@@ -600,7 +603,7 @@ class TimetableModel:
                     penalites_capacite.append(penalite)
 
         self._vars['penalites_capacite'] = penalites_capacite
-        print(f"   -> Objectif : Minimiser {len(penalites_capacite)} violations de capacité potentielles.")
+        logger.info(f"   -> Objectif : Minimiser {len(penalites_capacite)} violations de capacité potentielles.")
         self.model.Minimize(sum(penalites_capacite))
         #self.penaliser_trous_profs(self.data)  # ← nouvelle fonction
 
@@ -630,6 +633,6 @@ class TimetableModel:
         # Objectif final : Minimiser la somme de tous les coûts
         total_obj = obj_capacite + obj_tardif  # + obj_trous
 
-#        print(
+#        logger.info(
  #           f"   -> Objectif : Minimiser les coûts (Capacité: {len(penalites_capacite)}, Fin Tardive: {len(self.penalites_fin_tardive)} potentiels).")
         self.model.Minimize(total_obj)

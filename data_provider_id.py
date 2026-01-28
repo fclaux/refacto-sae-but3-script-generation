@@ -6,6 +6,10 @@ from sqlalchemy.engine import Engine
 from db_utils import create_db_engine, get_db_config
 from function import get_availabilityProf_From_Unavailable, get_availabilityRoom_From_Unavailable, \
     get_availabilityGroup_From_Unavailable, convert_days_int_to_string, get_availabilitySlot_From_Unavailable
+from logger_config import get_logger
+
+# Configuration du logger pour ce module
+logger = get_logger(__name__)
 
 
 # ==============================================================================
@@ -29,7 +33,7 @@ class DataProviderID:
         list_amphi_c=[{0: [(11, 23)]},{1: [(0, 7)]},{2: [(0, 7)]},{3: []},{4: [(11, 23)]}] #
         #Il faudrait que l'application puisse gérer le fait d'importer une liste des jours d'amphi, pour le
         #moment on met les infos en dur afin de faire les tests
-        print("1. Chargement des données depuis la base de données...")
+        logger.info("1. Chargement des données depuis la base de données...")
         jours = 5
         creneaux_par_jour = 23
         slots = [(d, s) for d in range(jours) for s in range(creneaux_par_jour)]
@@ -160,7 +164,7 @@ class DataProviderID:
         # DEBUG
         df_prof_slot = pd.read_sql(query_prof_slot, self.engine)
         profs_par_slot = df_prof_slot.groupby('slot_id')['prof_name'].apply(list).to_dict()
-        print("profs par slot : ",profs_par_slot)
+        logger.debug(f"profs par slot : {profs_par_slot}")
         #profs = df_profs['prof_name'].tolist()
 
         #cours, duree_cours, taille_groupes, map_groupe_cours = self._build_course_structures(df_planning,profs_par_slot, profs)
@@ -169,8 +173,8 @@ class DataProviderID:
         )
         salles = df_salles.set_index('name')['seat_capacity'].to_dict()
 
-        print(f"   -> {len(cours)} cours à planifier.")
-        print(f"   -> {len(salles)} salles et {len(profs)} professeurs disponibles.")
+        logger.info(f"   -> {len(cours)} cours à planifier.")
+        logger.info(f"   -> {len(salles)} salles et {len(profs)} professeurs disponibles.")
 
         # Dans le return
         group_to_dispo_key = {
@@ -305,11 +309,11 @@ class DataProviderID:
             profs_autorises = profs_par_slot.get(idx, [])
             indices_profs = [i for i, name in enumerate(profs) if name in profs_autorises]
             if not indices_profs:
-                print(f"Attention: Aucun prof autorisé pour {cid}")
+                logger.warning(f"Aucun prof autorisé pour {cid}")
                 profs.append("None_"+str(cpt_no_profs))
                 index=profs.index("None_"+str(cpt_no_profs))
                 indices_profs = [index]#list(range(len(profs)))
-                print("indices profs",indices_profs)
+                logger.debug(f"indices profs: {indices_profs}")
                 cpt_no_profs+=1
             cours.append({
                 "id": cid,
@@ -354,6 +358,6 @@ class DataProviderID:
                 if_exists='append',  # Ajoute les lignes à la table existante
                 index=False
             )
-            print(f"✅ {rows_inserted} lignes insérées dans la table '{table_name}'.")
+            logger.info(f"{rows_inserted} lignes insérées dans la table '{table_name}'.")
         except Exception as e:
-            print(f"❌ Erreur lors de l'insertion : {e}")
+            logger.error(f"Erreur lors de l'insertion : {e}")

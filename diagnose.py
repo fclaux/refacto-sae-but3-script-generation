@@ -1,3 +1,8 @@
+from logger_config import get_logger
+
+# Configuration du logger pour ce module
+logger = get_logger(__name__)
+
 def diagnose_feasibility(d):
     jours = d['jours']
     cpd = d['creneaux_par_jour']
@@ -32,7 +37,7 @@ def diagnose_feasibility(d):
         if not valid_starts:
             problems['no_valid_start'].append((cid, duration))
         # Stocker le nombre pour info
-        # print(f"{cid}: {len(valid_starts)} départs valides")
+        # logger.info(f"{cid}: {len(valid_starts)} valid starts")
 
     # 2) Vérifier les capacités des salles
     # Pour chaque cours, vérifier qu'au moins une salle a une capacité >= taille du groupe
@@ -56,33 +61,32 @@ def diagnose_feasibility(d):
             problems['group_overbooked'].append((grp, total, total_usable_slots))
 
     # Afficher le résumé
-    print("=== Diagnostic faisabilité (statique) ===")
-    print(f"Jours: {jours}, creneaux_par_jour: {cpd}, slots total: {nb_slots}")
-    print(f"Slots utilisables par jour (hors midi): {usable_per_day}, total utilisables: {total_usable_slots}")
-    print()
+    logger.info("=== Diagnostic faisabilité (statique) ===")
+    logger.info(f"Jours: {jours}, creneaux_par_jour: {cpd}, slots total: {nb_slots}")
+    logger.info(f"Slots utilisables par jour (hors midi): {usable_per_day}, total utilisables: {total_usable_slots}")
     if problems['no_valid_start']:
-        print("Cours sans aucun start valide (durée incompatible ou traversée midi):")
+        logger.info("Cours sans aucun start valide (durée incompatible ou traversée midi):")
         for cid, duration in problems['no_valid_start']:
-            print(f" - {cid}: durée {duration} slots")
+            logger.info(f" - {cid}: durée {duration} slots")
     else:
-        print("OK: tous les cours ont au moins un start valide.")
+        logger.info("OK: tous les cours ont au moins un start valide.")
 
     if problems['no_room']:
-        print("\nCours sans salle suffisante (capacité):")
+        logger.info("\nCours sans salle suffisante (capacité):")
         for cid, grp, taille in problems['no_room']:
-            print(f" - {cid}: groupe {grp} taille {taille}")
+            logger.info(f" - {cid}: groupe {grp} taille {taille}")
     else:
-        print("OK: toutes les classes ont au moins une salle de capacité suffisante.")
+        logger.info("OK: toutes les classes ont au moins une salle de capacité suffisante.")
 
     if problems['group_overbooked']:
-        print("\nGroupes demandant plus de slots utilisables que disponibles (impossible globalement):")
+        logger.info("\nGroupes demandant plus de slots utilisables que disponibles (impossible globalement):")
         for grp, need, avail in problems['group_overbooked']:
-            print(f" - {grp}: besoin {need} slots, mais seulement {avail} utilisables")
+            logger.info(f" - {grp}: besoin {need} slots, mais seulement {avail} utilisables")
     else:
-        print("OK: aucun groupe n'exige plus de slots utilisables que disponibles (check global nécessaire mais non suffisant).")
+        logger.info("OK: aucun groupe n'exige plus de slots utilisables que disponibles (check global nécessaire mais non suffisant).")
 
-    print("\nSi tout est OK ci-dessus mais INFEASIBLE persiste, vérifier :")
-    print("- contrainte de salles disponibles simultanément (nombre de grandes salles pour BUT3)")
-    print("- contraintes de profs (s'il y a des restrictions implicites)")
-    print("- intégrité des linking constraints (start -> occupe) : assure-toi qu'elles correspondent exactement aux indices de slots")
+    logger.info("\nSi tout est OK ci-dessus mais INFEASIBLE persiste, vérifier :")
+    logger.info("- contrainte de salles disponibles simultanément (nombre de grandes salles pour BUT3)")
+    logger.info("- contraintes de profs (s'il y a des restrictions implicites)")
+    logger.info("- intégrité des linking constraints (start -> occupe) : assure-toi qu'elles correspondent exactement aux indices de slots")
     return problems

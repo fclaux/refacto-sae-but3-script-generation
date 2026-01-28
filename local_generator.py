@@ -6,6 +6,11 @@ from datetime import datetime, timedelta  # ← ajoute timedelta ici aussi
 
 from Front.schedule_generator import generate_schedule
 from db_utils import get_engine
+from logger_config import get_logger
+
+# Configuration du logger pour ce module
+logger = get_logger(__name__)
+
 
 # ==================== CONFIGURATION ====================
 engine = get_engine()
@@ -125,7 +130,7 @@ class EDTViewerApp:
 
         except Exception as e:
             messagebox.showerror("Erreur", f"Impossible de charger l'emploi du temps :\n{e}")
-            print(e)  # pour débug dans la console
+            logger.error(e)  # pour debug dans la console
 
     def afficher_dans_tableau(self, df):
         for i in self.tree.get_children():
@@ -242,7 +247,7 @@ class EDTViewerApp:
                 continue
 
             cfg = config[promo]
-            print(f"Génération EDT → {promo} - Semaine {semaine} - {len(cfg['cours'])} cours")
+            logger.info(
 
             generate_schedule(
                 promotion=promo,
@@ -361,7 +366,7 @@ def build_config_from_db(
     filtered = filtered[filtered['semaine'].astype(str) == str(week_number)]
 
     if filtered.empty:
-        print(f"Aucun cours trouvé pour la semaine {week_number} et promotion {promotion_filter or 'toutes'}")
+        logger.info(f"Aucun cours trouvé pour la semaine {week_number} et promotion {promotion_filter or 'toutes'}")
         return {}
 
     # === 1. Déterminer la promotion (on prend la première trouvée si plusieurs) ===
@@ -413,7 +418,7 @@ def build_config_from_db(
 
         if pd.notna(row['sous_groupe']):
             # Ex: G4A → on veut [0, 'A'] si G4 est le groupe principal à l'index 0
-            print(groupes_list, " ", all_groups)
+            logger.info(groupes_list, " ", all_groups)
             sg = str(row['sous_groupe'])
             if sg in all_groups:
                 idx = all_groups.index(next((g for g in groupes_list if sg.startswith(g)), None))
@@ -450,7 +455,7 @@ def build_config_from_db(
             "cours": cours_list
         }
     }
-    print(config)
+    logger.info(config)
     return config
 
 # ==================== DÉMARRAGE ====================

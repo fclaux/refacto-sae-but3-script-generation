@@ -4,6 +4,11 @@ import pandas as pd
 from sqlalchemy.engine import Engine
 
 from db_utils import create_db_engine, get_db_config
+from logger_config import get_logger
+
+# Configuration du logger pour ce module
+logger = get_logger(__name__)
+
 
 #TODO Faire une refacto des fonctions afin qu'il y ait moins de duplication et que ce soit plus compréhensible et renommage.
 def get_end_time(row) -> str:
@@ -87,8 +92,8 @@ def get_availabilityRoom_From_Unavailable(df_dispos,creneaux_par_jour):
     indisponibilites_salles=recuperation_indisponibilites_rooms(df_dispos, indisponibilites_salles)
 
     disponibilites_salles=recuperation_disponibilites_rooms(creneaux_par_jour, disponibilites_salles, indisponibilites_salles)
-    print("indisponibilites_salles : ",indisponibilites_salles)
-    print("disponibilites_salles : ",disponibilites_salles)
+    logger.info("indisponibilites_salles : ",indisponibilites_salles)
+    logger.info("disponibilites_salles : ",disponibilites_salles)
     #disponibilites_salles= {16: {0: [(9, 23)], 1: [(0, 9)], 2: [(0, 9)], 4: [(9, 20)]}}
 
     return disponibilites_salles
@@ -100,7 +105,7 @@ def recuperation_disponibilites_rooms(creneaux_par_jour, disponibilites_salles: 
     for i in indisponibilites_salles:
         for day in liste_jour:
             if day in indisponibilites_salles[i]:
-                print("day : ", day)
+                logger.info("day : ", day)
                 h_min = 0
                 h_max = creneaux_par_jour
                 for k in indisponibilites_salles[i][day]:
@@ -263,7 +268,7 @@ class FunctionTest:
                            ) \
                        """
         df_dispos_profs = pd.read_sql(query_dispos, self.engine, params={"week_id": week_id})
-        print("test Prof",get_availabilityProf_From_Unavailable(df_dispos_profs,20)) # changer le 20 en une valeur étant le nombre de créneau
+        logger.info("test Prof",get_availabilityProf_From_Unavailable(df_dispos_profs,20)) # changer le 20 en une valeur étant le nombre de créneau
 
         query_dispos = """
                        SELECT rc.room_id, rc.day_of_week, rc.start_time, rc.end_time, rc.priority, rc.week_id
@@ -283,7 +288,7 @@ class FunctionTest:
                            ) \
                        """
         df_dispos_salles = pd.read_sql(query_dispos, self.engine, params={"week_id": week_id})
-        print("Test salles : ",get_availabilityRoom_From_Unavailable(df_dispos_salles,23)) # changer le 20 en une valeur étant le nombre de créneau
+        logger.info("Test salles : ",get_availabilityRoom_From_Unavailable(df_dispos_salles,23)) # changer le 20 en une valeur étant le nombre de créneau
 
         query_dispos = """
                        SELECT gc.group_id, gc.day_of_week, gc.start_time, gc.end_time, gc.priority, gc.week_id
@@ -303,7 +308,7 @@ class FunctionTest:
                            ) \
                        """
         df_dispos_groupes = pd.read_sql(query_dispos, self.engine, params={"week_id": week_id})
-        print("Test Group",get_availabilityGroup_From_Unavailable(df_dispos_groupes,20))
+        logger.info("Test Group",get_availabilityGroup_From_Unavailable(df_dispos_groupes,20))
 
         query_dispos = """
                        SELECT sc.slot_id, sc.day_of_week, sc.start_time, sc.end_time, sc.priority, sc.week_id
@@ -323,12 +328,12 @@ class FunctionTest:
                            ) \
                        """
         df_dispos_slots = pd.read_sql(query_dispos, self.engine, params={"week_id": week_id})
-        print("Test slot : ",get_availabilitySlot_From_Unavailable(df_dispos_slots,20))
+        logger.info("Test slot : ",get_availabilitySlot_From_Unavailable(df_dispos_slots,20))
 
 
 
 if __name__ == "__main__":
     data_provider = FunctionTest()  # Utilise la config depuis .env
     data_provider.load_and_prepare_data()
-    print(recup_cours("CM_R1.01 Initiation au développement_BUT1_s7000000"))
-    print(recup_id_slot_from_str_to_int("développement_BUT1_s7000000"))
+    logger.info(recup_cours("CM_R1.01 Initiation au développement_BUT1_s7000000"))
+    logger.info(recup_id_slot_from_str_to_int("développement_BUT1_s7000000"))
