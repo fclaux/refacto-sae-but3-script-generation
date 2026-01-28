@@ -24,8 +24,8 @@ def get_db_config() -> Dict[str, Any]:
         'host': os.getenv('DB_HOST', '127.0.0.1'),
         'port': int(os.getenv('DB_PORT', '3306')),
         'database': os.getenv('DB_DATABASE', 'provisional_calendar'),
-        'user': os.getenv('DB_USER', 'root'),
-        'password': os.getenv('DB_PASSWORD', 'secret'),
+        'user': os.getenv('DB_USER', 'default_user'),
+        'password': os.getenv('DB_PASSWORD', 'default_pass'),
     }
 
 

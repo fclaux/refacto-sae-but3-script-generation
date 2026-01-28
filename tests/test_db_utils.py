@@ -37,7 +37,7 @@ class TestGetDbConfig(unittest.TestCase):
     }
     DEFAULTS = {
         'host': '127.0.0.1', 'port': 3306, 'database': 'provisional_calendar',
-        'user': 'root', 'password': 'secret'
+        'user': 'default_user', 'password': 'default_pass'
     }
     REQUIRED_KEYS = ['host', 'port', 'database', 'user', 'password']
 
@@ -52,10 +52,8 @@ class TestGetDbConfig(unittest.TestCase):
     @patch.dict(os.environ, {}, clear=True)
     def test_get_db_config_defaults(self):
         """get_db_config utilise les valeurs par défaut si env non défini."""
-        import importlib
-        import db_utils
-        importlib.reload(db_utils)
-        config = db_utils.get_db_config()
+        from db_utils import get_db_config
+        config = get_db_config()
         for key, expected in self.DEFAULTS.items():
             self.assertEqual(config[key], expected)
 
