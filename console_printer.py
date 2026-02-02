@@ -4,7 +4,7 @@ Respecte le principe Single Responsibility (SOLID).
 """
 from typing import Dict, List
 from course_data_models import CourseAssignment
-from time_formatter import TimeFormatter
+from interfaces import ITimeFormatter
 from logger_config import get_logger
 
 logger = get_logger(__name__)
@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 class ConsolePrinter:
     """Affiche l'emploi du temps dans la console."""
 
-    def __init__(self, data: Dict, time_formatter: TimeFormatter):
+    def __init__(self, data: Dict, time_formatter: ITimeFormatter):
         self.data = data
         self.time_formatter = time_formatter
 

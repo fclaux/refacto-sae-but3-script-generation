@@ -1,12 +1,26 @@
 """
 Module principal pour visualiser les solutions d'emploi du temps.
-Refactorisé selon les principes SOLID.
+Refactorisé selon les principes SOLID avec vraie injection de dépendances.
 """
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from logger_config import get_logger
-from time_formatter import TimeFormatter
 from course_data_models import CourseScheduleInfo
+
+# Import des INTERFACES (abstractions) - pas des implémentations concrètes
+from interfaces import (
+    ITimeFormatter,
+    ISolutionParser,
+    IScheduleBuilder,
+    IConsolePrinter,
+    IGroupClassifier,
+    ICourseConverter,
+    IGraphicalScheduleGenerator,
+    IYearConfigBuilder
+)
+
+# Import des implémentations par défaut (pour fallback uniquement)
+from time_formatter import TimeFormatter
 from solution_parser import SolutionParser
 from schedule_builder import ScheduleBuilder
 from console_printer import ConsolePrinter
@@ -30,28 +44,52 @@ class SolutionVisualizer:
     - O: Extensible sans modification (configurations centralisées)
     - L: Pas d'héritage problématique
     - I: Interfaces claires et séparées
-    - D: Dépendances injectées, pas de couplage fort
+    - D: Dépend d'ABSTRACTIONS (interfaces), pas d'implémentations concrètes
     """
 
-    def __init__(self, solution: Dict[str, Any], data: Dict[str, Any]):
+    def __init__(
+        self,
+        solution: Dict[str, Any],
+        data: Dict[str, Any],
+        time_formatter: Optional[ITimeFormatter] = None,
+        parser: Optional[ISolutionParser] = None,
+        schedule_builder: Optional[IScheduleBuilder] = None,
+        console_printer: Optional[IConsolePrinter] = None,
+        group_classifier: Optional[IGroupClassifier] = None,
+        course_converter: Optional[ICourseConverter] = None,
+        graphical_generator: Optional[IGraphicalScheduleGenerator] = None,
+        year_config_builder: Optional[IYearConfigBuilder] = None,
+    ):
         """
         Initialise le visualisateur avec injection de dépendances.
+
+        IMPORTANT: Les dépendances sont typées avec des INTERFACES (I...),
+        pas avec des classes concrètes. Ceci respecte le Dependency Inversion Principle.
 
         Args:
             solution: Dictionnaire contenant solver et variables OR-Tools
             data: Données de configuration (cours, salles, profs, etc.)
+            time_formatter: Interface de formateur de temps (optionnel)
+            parser: Interface de parser de solution OR-Tools (optionnel)
+            schedule_builder: Interface de constructeur de planning (optionnel)
+            console_printer: Interface d'afficheur console (optionnel)
+            group_classifier: Interface de classificateur de groupes (optionnel)
+            course_converter: Interface de convertisseur de cours (optionnel)
+            graphical_generator: Interface de générateur graphique (optionnel)
+            year_config_builder: Interface de constructeur de config (optionnel)
         """
         self.data = data
 
-        # Injection de dépendances - respecte Dependency Inversion
-        self._time_formatter = TimeFormatter()
-        self._parser = SolutionParser(solution, data)
-        self._schedule_builder = ScheduleBuilder(data, self._time_formatter)
-        self._console_printer = ConsolePrinter(data, self._time_formatter)
-        self._group_classifier = GroupClassifier()
-        self._course_converter = CourseConverter(self._group_classifier)
-        self._graphical_generator = GraphicalScheduleGenerator()
-        self._year_config_builder = YearConfigBuilder()
+        # Injection de dépendances - respecte Dependency Inversion Principle
+        # Les dépendances sont des INTERFACES, substituables par n'importe quelle implémentation
+        self._time_formatter = time_formatter or TimeFormatter()
+        self._parser = parser or SolutionParser(solution, data)
+        self._schedule_builder = schedule_builder or ScheduleBuilder(data, self._time_formatter)
+        self._console_printer = console_printer or ConsolePrinter(data, self._time_formatter)
+        self._group_classifier = group_classifier or GroupClassifier()
+        self._course_converter = course_converter or CourseConverter(self._group_classifier)
+        self._graphical_generator = graphical_generator or GraphicalScheduleGenerator()
+        self._year_config_builder = year_config_builder or YearConfigBuilder()
 
         # Parse la solution une seule fois
         self._assignments = self._parser.parse_assignments()

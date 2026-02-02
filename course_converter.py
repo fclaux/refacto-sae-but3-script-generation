@@ -4,14 +4,14 @@ Respecte le principe Single Responsibility (SOLID).
 """
 from typing import List, Tuple, Dict
 from course_data_models import CourseScheduleInfo
-from group_classifier import GroupClassifier
+from interfaces import IGroupClassifier
 from time_formatter import DAYS
 
 
 class CourseConverter:
     """Convertit les cours en format pour la génération graphique."""
 
-    def __init__(self, group_classifier: GroupClassifier):
+    def __init__(self, group_classifier: IGroupClassifier):
         self._group_classifier = group_classifier
 
     def convert_to_room_lists(self, courses: List[CourseScheduleInfo],
@@ -74,4 +74,3 @@ class CourseConverter:
         group = parts[-2] if len(parts) > 1 else "UNKNOWN"
 
         return self._group_classifier.get_year_level(group)
-

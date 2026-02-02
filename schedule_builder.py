@@ -4,13 +4,13 @@ Respecte le principe Single Responsibility (SOLID).
 """
 from typing import Dict, List
 from course_data_models import CourseAssignment, CourseScheduleInfo
-from time_formatter import TimeFormatter
+from interfaces import ITimeFormatter
 
 
 class ScheduleBuilder:
     """Construit une structure d'emploi du temps à partir des affectations."""
 
-    def __init__(self, data: Dict, time_formatter: TimeFormatter):
+    def __init__(self, data: Dict, time_formatter: ITimeFormatter):
         self.data = data
         self.time_formatter = time_formatter
 
